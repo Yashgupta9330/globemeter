@@ -6,11 +6,12 @@ import { Globe, Loader } from 'lucide-react';
 import axios from "../utils/axios.config";
 
 interface UserRegistrationProps {
-  onRegister: (username: string) => void;
+  onRegister: (username: string, password: string) => void;
 }
 
 const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState(generateSecurePassword());
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isUsernameAvailable, setIsUsernameAvailable] = useState(false);
@@ -18,6 +19,17 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
   
   const { toast } = useToast();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  function generateSecurePassword(): string {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let generatedPassword = "";
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      generatedPassword += charset[randomIndex];
+    }
+    return generatedPassword;
+  }
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -42,7 +54,7 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
 
     try {
       const response = await axios.get(`/user/username/${name}`);
-      const isAvailable = !response.data.success;
+      const isAvailable = response.data.success;
       setIsUsernameAvailable(isAvailable);
       setErrorMessage(isAvailable ? '' : 'Username is already taken');
 
@@ -56,10 +68,10 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
     } catch (error) {
       console.error(error);
       setIsUsernameAvailable(false);
-      setErrorMessage('Error checking username');
+      setErrorMessage('Username already exists');
       toast({
         title: "Error",
-        description: "Failed to check username availability",
+        description: "Username already exists",
         variant: "destructive"
       });
     } finally {
@@ -69,7 +81,6 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (isValidating) {
       toast({
         title: "Please wait",
@@ -78,7 +89,6 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
       });
       return;
     }
-
     if (!username.trim()) {
       toast({
         title: "Username required",
@@ -87,7 +97,6 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
       });
       return;
     }
-
     if (!isUsernameAvailable) {
       toast({
         title: "Invalid username",
@@ -96,17 +105,23 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
       });
       return;
     }
-
-    setIsLoading(true);
-
-    setTimeout(() => {
-      onRegister(username.trim());
-      setIsLoading(false);
+    setIsLoading(true); // Set loading state to true
+    try {
+      await onRegister(username.trim(), password);
       toast({
-        title: "Welcome aboard!",
-        description: `You're registered as ${username}. Happy globe-trotting!`,
+        title: "Challenge account created!",
+        description: `Account created as ${username}. Ready to share!`,
       });
-    }, 1000);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Registration error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false); // Reset loading state
+    }
   };
 
   return (
@@ -145,7 +160,13 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onRegister }) => {
               className="w-full bg-ocean hover:bg-ocean-dark"
               disabled={isLoading || isValidating}
             >
-              {isLoading ? "Creating Profile..." : "Create Profile"}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader className="w-4 h-4 animate-spin" /> Creating Profile...
+                </span>
+              ) : (
+                "Create Profile"
+              )}
             </Button>
           </form>
 

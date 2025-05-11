@@ -1,199 +1,66 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { FaWhatsapp, FaUser, FaTimes, FaSpinner } from "react-icons/fa";
+import { FaWhatsapp, FaTimes, FaSpinner } from "react-icons/fa";
 import { useAuth } from "../context/auth";
 import { useToast } from "../context/toast";
 import html2canvas from "html2canvas";
-import axios from "../utils/axios.config";
 import { Trophy } from "lucide-react";
+import UserRegistration from "./UserRegistration";
 
-// Types for form state
-interface FormData {
-  username: string;
-  password: string;
-}
-
-// Types for user validation
-interface ValidationState {
-  isUsernameAvailable: boolean;
-  isUsernameChecking: boolean;
-  errorMessage: string;
-}
-
-// Props for the invite modal
-interface InviteModalProps {
+interface ShareButtonProps {
   isOpen: boolean;
   onClose: () => void;
   score: number;
   currentClue?: string;
 }
 
-// Add this function after the interface declarations
-const generateSecurePassword = (): string => {
-  const length = 12;
-  const charset =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-  let password = "";
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    password += charset[randomIndex];
-  }
-  return password;
-};
-
-// Main InviteModal component
-const ShareButton: React.FC<InviteModalProps> = ({
+const ShareButton: React.FC<ShareButtonProps> = ({
   isOpen,
   onClose,
   score,
   currentClue,
 }) => {
-  // States for controlling the flow
   const [step, setStep] = useState<number>(1);
-  const [formData, setFormData] = useState<FormData>({
-    username: "",
-    password: generateSecurePassword(),
-  });
-  const [validation, setValidation] = useState<ValidationState>({
-    isUsernameAvailable: false,
-    isUsernameChecking: false,
-    errorMessage: "",
-  });
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [isCreating, setIsCreating] = useState(false);
   const [shareImage, setShareImage] = useState<string | null>(null);
   const [friendsToken, setFriendsToken] = useState<string | null>(null);
 
-  // Auth context for user operations - using registerUser from AuthContext
   const { registerFriend, user: invitingUser } = useAuth();
-
-  // Toast context for notifications
   const { showToast } = useToast();
-
-  // Refs for the share image container
   const shareContentRef = useRef<HTMLDivElement>(null);
 
-  // Close modal and reset state
   const handleClose = () => {
     setStep(1);
-    setFormData({ username: "", password: generateSecurePassword() });
-    setValidation({
-      isUsernameAvailable: false,
-      isUsernameChecking: false,
-      errorMessage: "",
-    });
+    setUsername("");
+    setPassword("");
     setIsCreating(false);
     setShareImage(null);
     onClose();
   };
 
-  // Check if username is available after debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (formData.username.length >= 3) {
-        checkUsername(formData.username);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [formData.username]);
-
-  // Use the existing username availability check function
-  const checkUsername = async (username: string) => {
-    if (username.length < 3) {
-      setValidation({
-        isUsernameAvailable: false,
-        isUsernameChecking: false,
-        errorMessage: "Username must be at least 3 characters",
-      });
-      return;
-    }
-
-    setValidation({
-      ...validation,
-      isUsernameChecking: true,
-      errorMessage: "",
-    });
-
+  const handleRegister = async (newUsername: string, newPassword: string) => {
     try {
-      // Use the existing API endpoint to check username availability
-      const response = await axios.get(`/user/username/${username}`);
+      setIsCreating(true);
+      setUsername(newUsername);
+      setPassword(newPassword);
 
-      const isAvailable = response.data.success;
+      const token = await registerFriend(newUsername, newPassword);
+      setFriendsToken(token);
+      setStep(2);
 
-      setValidation({
-        isUsernameAvailable: isAvailable,
-        isUsernameChecking: false,
-        errorMessage: isAvailable ? "" : "Username is already taken",
-      });
-
-      // Show toast notification if username is taken
-      if (!isAvailable) {
-        showToast("Username is already taken", "error");
-      }
+      setTimeout(() => {
+        generateShareImage();
+      }, 1000);
     } catch (error) {
-      console.log(error);
-      setValidation({
-        ...validation,
-        isUsernameChecking: false,
-        errorMessage: "Error checking username",
-      });
-      showToast("Failed to check username availability", "error");
+      console.error("Error registering friend:", error);
+      showToast("Failed to create account", "error");
+    } finally {
+      setIsCreating(false);
     }
   };
 
-  // Handle form input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Reset validation when username changes
-    if (name === "username") {
-      setValidation({
-        isUsernameAvailable: false,
-        isUsernameChecking: false,
-        errorMessage: "",
-      });
-    }
-  };
-
-  // Handle form submission for each step
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (step === 1 && validation.isUsernameAvailable) {
-      try {
-        setIsCreating(true);
-
-        const friendsToken = await registerFriend(
-          formData.username,
-          formData.password
-        );
-
-        setFriendsToken(friendsToken);
-        setStep(3); // Skip step 2, go directly to sharing
-        setIsCreating(false);
-
-        showToast(
-          `Account created successfully as ${formData.username}!`,
-          "success"
-        );
-
-        setTimeout(() => {
-          generateShareImage();
-        }, 1500);
-      } catch (error) {
-        console.log(error);
-        setIsCreating(false);
-        setValidation({
-          ...validation,
-          errorMessage: "Error creating account",
-        });
-        showToast("Failed to create account", "error");
-      }
-    }
-  };
-
-  // Generate image for sharing
   const generateShareImage = async () => {
     if (shareContentRef.current) {
       try {
@@ -209,6 +76,7 @@ const ShareButton: React.FC<InviteModalProps> = ({
             })
           );
         }
+
         const canvas = await html2canvas(shareContentRef.current, {
           scale: 2,
           backgroundColor: null,
@@ -224,36 +92,30 @@ const ShareButton: React.FC<InviteModalProps> = ({
     }
   };
 
-  // Share to WhatsApp
   const shareToWhatsApp = () => {
-    const frontendURL = import.meta.env.VITE_FRONTEND_URL;
-    if (!shareImage) return;
-    const link = document.createElement('a');
-    link.href = shareImage;
-    link.download = 'globetotter-challenge.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const frontendURL = import.meta.env.VITE_FRONTEND_URL || "https://globemeter.vercel.app";
+    if (!shareImage || !friendsToken) {
+      showToast("Unable to share. Please try again.", "error");
+      return;
+    }
 
-    const text = `🌍 *GLOBETOTTER CHALLENGE!* 🌍
+    const text = `*GLOBETOTTER CHALLENGE!*
 
-👋 Hey explorer! ${invitingUser?.username} just set the bar high with ${invitingUser?.score} points in Globetotter!
+Hey explorer! ${invitingUser?.username} just set the bar high with ${score} points in Globetotter!
 
-🧠 Think you've got what it takes? Dive into a world of cryptic clues and iconic destinations to test your geography smarts.
+Think you've got what it takes? Dive into a world of cryptic clues and iconic destinations to test your geography smarts.
 
-📱 YOUR LOGIN CREDENTIALS:
-Username: ${formData?.username}
-Password: ${formData?.password}
+YOUR LOGIN CREDENTIALS:
+Username: ${username}
+Password: ${password}
 
-🎯 Take on the challenge: https://globemeter.vercel.app/new/${friendsToken}
+Take on the challenge: ${frontendURL}/new/${friendsToken}/${score}
 
-🗺️ Explore. Decode. Dominate. How far can your travel knowledge take you?
-`;
+Explore. Decode. Dominate. How far can your travel knowledge take you?`;
 
     try {
       const shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
       window.open(shareUrl, "_blank");
-
       showToast("Challenge shared successfully!", "success");
     } catch (error) {
       console.error("Error sharing to WhatsApp:", error);
@@ -273,7 +135,7 @@ Password: ${formData?.password}
       >
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-bold text-gray-800">
-            {step === 1 ? "Create Username" : "Share Challenge"}
+            {step === 1 ? "Create Challenge Account" : "Share Challenge"}
           </h2>
           <button
             onClick={handleClose}
@@ -284,19 +146,11 @@ Password: ${formData?.password}
         </div>
 
         <div className="p-4">
-          {step === 1 && (
-            <UsernameForm
-              username={formData.username}
-              onChange={handleChange}
-              onSubmit={handleSubmit}
-              validation={validation}
-              isCreating={isCreating}
-            />
-          )}
+          {step === 1 && <UserRegistration onRegister={handleRegister} />}
 
-          {step === 3 && (
+          {step === 2 && (
             <ShareContent
-              username={formData.username}
+              username={username}
               score={score}
               currentClue={currentClue}
               shareImage={shareImage}
@@ -310,91 +164,6 @@ Password: ${formData?.password}
   );
 };
 
-// Username Form Component
-const UsernameForm: React.FC<{
-  username: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  validation: ValidationState;
-  isCreating: boolean;
-}> = ({ username, onChange, onSubmit, validation, isCreating }) => {
-  return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <label
-          htmlFor="username"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Enter a unique username
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FaUser className="text-gray-400" />
-          </div>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={username}
-            onChange={onChange}
-            className="pl-10 pr-10 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Username"
-            minLength={3}
-            required
-          />
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-            {validation.isUsernameChecking && (
-              <FaSpinner className="animate-spin text-gray-400" />
-            )}
-            {validation.isUsernameAvailable &&
-              !validation.isUsernameChecking && (
-                <div className="text-green-500">✓</div>
-              )}
-            {!validation.isUsernameAvailable &&
-              !validation.isUsernameChecking &&
-              username.length >= 3 && <div className="text-red-500">✗</div>}
-          </div>
-        </div>
-        {validation.errorMessage && (
-          <p className="text-red-500 text-sm mt-1">{validation.errorMessage}</p>
-        )}
-        {username.length > 0 && username.length < 3 && (
-          <p className="text-yellow-500 text-sm mt-1">
-            Username must be at least 3 characters
-          </p>
-        )}
-      </div>
-
-      <button
-        type="submit"
-        disabled={
-          !validation.isUsernameAvailable ||
-          validation.isUsernameChecking ||
-          username.length < 3 ||
-          isCreating
-        }
-        className={`w-full py-2 rounded-md font-medium transition-colors cursor-pointer flex justify-center items-center ${
-          validation.isUsernameAvailable &&
-          !validation.isUsernameChecking &&
-          username.length >= 3 &&
-          !isCreating
-            ? "bg-primary text-white hover:bg-primary/90"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-        }`}
-      >
-        {isCreating ? (
-          <>
-            <FaSpinner className="animate-spin mr-2" />
-            Creating Account...
-          </>
-        ) : (
-          "Create Account"
-        )}
-      </button>
-    </form>
-  );
-};
-
 const ShareContent = React.forwardRef<
   HTMLDivElement,
   {
@@ -404,14 +173,13 @@ const ShareContent = React.forwardRef<
     shareImage: string | null;
     shareToWhatsApp: () => void;
   }
->(({ currentClue, shareImage, shareToWhatsApp }, ref) => {
+>(({ currentClue,score, shareImage, shareToWhatsApp }, ref) => {
   const { user: invitingUser } = useAuth();
 
   return (
     <div className="space-y-6">
       <div
         ref={ref}
-        // Using standard CSS colors that html2canvas can handle
         style={{
           background: "linear-gradient(to right, #4f46e5, #7c3aed)",
           padding: "1.5rem",
@@ -421,12 +189,9 @@ const ShareContent = React.forwardRef<
           overflow: "hidden",
         }}
       >
-        {/* Content */}
-        <div
-          style={{ position: "relative", zIndex: "10", textAlign: "center" }}
-        >
+        <div style={{ position: "relative", zIndex: "10", textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}>
-             <Trophy className="h-8 w-8" />
+            <Trophy className="h-8 w-8" />
           </div>
 
           <h3
@@ -449,7 +214,7 @@ const ShareContent = React.forwardRef<
           >
             <p style={{ fontWeight: "500" }}>Current Score</p>
             <p style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
-              {invitingUser?.score} points
+              {score} points
             </p>
           </div>
 

@@ -62,14 +62,6 @@ const UserStats: React.FC<UserStatsProps> = ({
                 <MapPin className="h-4 w-4" /> 
                 Continue Adventure
               </Button>
-              <Button 
-                variant="outline" 
-                className="border-ocean text-ocean hover:bg-ocean/5 gap-2"
-                onClick={onShareChallenge}
-              >
-                <Share2 className="h-4 w-4" />
-                Challenge a Friend
-              </Button>
             </div>
           </div>
         </div>

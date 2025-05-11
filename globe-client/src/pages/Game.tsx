@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "../utils/axios.config";
-import { Check, X, Map, Trophy, Compass, MapPin } from "lucide-react";
+import { Check, X, Map, Trophy, Compass, MapPin, Share2, Target } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ShareButton from "@/components/ShareButton";
 import { useAuth } from "@/context/auth";
+import { useSearchParams } from 'react-router-dom';
 
 const Game = () => {
   const { toast } = useToast();
@@ -22,20 +23,30 @@ const Game = () => {
   const [score, setScore] = useState(0);
   const [incorrectAnswers, setIncorrectAnswers] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
-  const {user,setUser} = useAuth();
+  const { user, setUser } = useAuth();
   const [showNextClue, setShowNextClue] = useState(false);
   const [revealedClueIndex, setRevealedClueIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  // Fetch clues when component mounts
+
+  const [searchParams] = useSearchParams();
+  const friendScore = parseInt(searchParams.get("friendScore") || "0", 10);
+
   useEffect(() => {
     fetchNewClue();
+
+    // Show toast if there's a friend score
+    if (friendScore) {
+      toast({
+        title: "Challenge Accepted! 🌎",
+        description: `Beat your friend's score of ${friendScore} points!`,
+      });
+    }
   }, []);
 
   const handleClose = () => {
     setIsOpen(false);
-  }
+  };
 
-  // Function to fetch a new clue
   const fetchNewClue = async (forceDelete = false) => {
     setLoading(true);
     setError(null);
@@ -43,7 +54,6 @@ const Game = () => {
     setAnswerResult(null);
     setShowFeedback(false);
     setRevealedClueIndex(0);
-
     try {
       const response = await axios.get(
         `/game/clue${forceDelete ? "?forceDelete=true" : ""}`
@@ -55,8 +65,6 @@ const Game = () => {
           return;
         }
         setClue(response.data.data);
-        
-        // Enable the next clue button after 5 seconds
         setTimeout(() => {
           setShowNextClue(true);
         }, 5000);
@@ -71,13 +79,11 @@ const Game = () => {
     }
   };
 
-  // Function to handle selecting an option
   const handleOptionSelect = (option) => {
-    if (answerResult || answering) return; // Prevent selecting while processing
+    if (answerResult || answering) return; 
     setSelectedOption(option);
   };
 
-  // Function to submit an answer
   const submitAnswer = async () => {
     if (!clue || !selectedOption || answering) return;
 
@@ -85,7 +91,6 @@ const Game = () => {
 
     try {
       const [city, country] = selectedOption.split(", ");
-      console.log("score ",score)
       const response = await axios.post("/game/answer", {
         clueId: clue.clueId,
         city,
@@ -99,18 +104,28 @@ const Game = () => {
         // Correct answer
         setScore((prev) => prev + 1);
         launchConfetti();
-        
+
         // Update user stats and show toast
         saveUserProgress(true);
         toast({
           title: "Correct! 🎉",
           description: `Well done! That was indeed ${city}, ${country}!`,
         });
+        
+        // Show beat friend toast if score surpasses friend's score
+        if (friendScore && score + 1 > friendScore) {
+          setTimeout(() => {
+            toast({
+              title: "New Achievement! 🏆",
+              description: `You've surpassed your friend's score of ${friendScore}!`,
+            });
+          }, 1000);
+        }
       } else {
         // Incorrect answer
         setIncorrectAnswers((prev) => prev + 1);
         showCryingEmojis();
-        
+
         // Update user stats and show toast
         saveUserProgress(false);
         toast({
@@ -135,13 +150,12 @@ const Game = () => {
         ...user,
         score: correct ? user.score + 1 : user.score - 1,
       };
-      
+
       setUser(updatedUser);
       localStorage.setItem("globetrotter_user", JSON.stringify(updatedUser));
     }
   };
 
-  // Function to launch confetti for correct answers
   const launchConfetti = () => {
     confetti({
       particleCount: 100,
@@ -150,7 +164,6 @@ const Game = () => {
     });
   };
 
-  // Function to show crying emojis for incorrect answers
   const showCryingEmojis = () => {
     const emojiCount = 20;
     const emojis = ["😭", "😭", "😿", "💧"];
@@ -159,13 +172,11 @@ const Game = () => {
     existingEmojis.forEach((emoji) => emoji.remove());
 
     for (let i = 0; i < emojiCount; i++) {
-      // Create a new emoji element
       const emoji = document.createElement("div");
       emoji.className = "crying-emoji";
       emoji.innerText = emojis[Math.floor(Math.random() * emojis.length)];
 
-      // Set random position and animation
-      const leftPos = Math.random() * 80 + 10; 
+      const leftPos = Math.random() * 80 + 10;
       emoji.style.cssText = `
         position: fixed;
         left: ${leftPos}%;
@@ -177,17 +188,14 @@ const Game = () => {
         animation: fall-emoji 3s ease-in forwards;
       `;
 
-      // Add to DOM
       document.body.appendChild(emoji);
 
-      // Remove after animation completes
       setTimeout(() => {
         emoji.remove();
       }, 3000);
     }
   };
 
-  // Add CSS animation for falling emojis
   useEffect(() => {
     const styleElement = document.createElement("style");
     styleElement.textContent = `
@@ -200,16 +208,13 @@ const Game = () => {
           opacity: 1;
         }
         100% {
-          transform: translateY(100vh) rotate(${
-            Math.random() > 0.5 ? "720" : "-720"
-          }deg);
+          transform: translateY(100vh) rotate(${Math.random() > 0.5 ? "720" : "-720"}deg);
           opacity: 0;
         }
       }
     `;
     document.head.appendChild(styleElement);
 
-    // Clean up function
     return () => {
       document.head.removeChild(styleElement);
       const emojis = document.querySelectorAll(".crying-emoji");
@@ -217,19 +222,16 @@ const Game = () => {
     };
   }, []);
 
-  // Handle next question
   const handleNextQuestion = () => {
     fetchNewClue();
   };
 
-  // Handle revealing next clue
   const handleNextClue = () => {
     if (!clue || revealedClueIndex >= clue.randomClue.length - 1) return;
-    
+
     setRevealedClueIndex((prev) => prev + 1);
     setShowNextClue(false);
-    
-    // Enable the next clue button after 5 seconds
+
     setTimeout(() => {
       setShowNextClue(true);
     }, 5000);
@@ -281,7 +283,7 @@ const Game = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1 py-8 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
@@ -294,13 +296,41 @@ const Game = () => {
                 Test your geography knowledge and explore the world!
               </p>
             </div>
-            
+
+            {/* Friend Challenge Banner */}
+            {friendScore > 0 && (
+              <Card className="mb-6 border-2 border-amber-300 bg-amber-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Target className="h-6 w-6 text-amber-600 mr-3" />
+                      <div>
+                        <h3 className="font-bold text-amber-800">Friend's Challenge</h3>
+                        <p className="text-amber-700 text-sm">Beat their score of {friendScore} points!</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-bold text-lg mr-2">
+                        {score}/{friendScore}
+                      </span>
+                      <div className="w-32 bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-amber-500 h-2.5 rounded-full" 
+                          style={{ width: `${Math.min(100, (score / friendScore) * 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <Card className="col-span-1 bg-ocean/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Correct Answers
+                    Correct
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -310,11 +340,11 @@ const Game = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="col-span-1 bg-coral/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Attempts
+                    Attempts
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -324,7 +354,7 @@ const Game = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="col-span-1 bg-accent/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -334,13 +364,13 @@ const Game = () => {
                 <CardContent>
                   <div className="text-2xl font-bold text-accent flex items-center">
                     <Trophy className="w-5 h-5 mr-1" />
-                    {score + incorrectAnswers > 0 
-                      ? `${Math.round((score / (score + incorrectAnswers)) * 100)}%` 
+                    {score + incorrectAnswers > 0
+                      ? `${Math.round((score / (score + incorrectAnswers)) * 100)}%`
                       : "0%"}
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="col-span-1 bg-secondary/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -361,7 +391,7 @@ const Game = () => {
                 </CardContent>
               </Card>
             </div>
-            
+
             {clue && (
               <Card className="mb-8 shadow-md overflow-hidden border-border">
                 <CardHeader className="bg-muted/30 pb-4">
@@ -375,7 +405,7 @@ const Game = () => {
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                
+
                 <CardContent className="pt-6">
                   {!showFeedback && (
                     <div className="mb-8">
@@ -398,11 +428,10 @@ const Game = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {!showFeedback ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {clue.options.map((option, index) => {
-                        // Capitalize option for display
                         const displayOption = option
                           .split(", ")
                           .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -412,11 +441,10 @@ const Game = () => {
                           <Button
                             key={index}
                             variant="outline"
-                            className={`p-4 h-auto border-2 transition-all ${
-                              selectedOption === option
+                            className={`p-4 h-auto border-2 transition-all ${selectedOption === option
                                 ? "bg-ocean text-white border-ocean"
                                 : "hover:bg-muted/30 hover:border-ocean"
-                            }`}
+                              }`}
                             onClick={() => handleOptionSelect(option)}
                           >
                             <div className="flex flex-col items-center w-full text-left">
@@ -470,13 +498,13 @@ const Game = () => {
                       </div>
                     )
                   )}
-                </CardContent>   
+                </CardContent>
                 <CardFooter className="flex justify-between pt-4 pb-4 bg-muted/10">
                   {!showFeedback ? (
                     <div className="flex justify-between w-full">
                       {showNextClue && revealedClueIndex < clue.randomClue.length - 1 ? (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           onClick={handleNextClue}
                           className="text-ocean border-ocean hover:bg-ocean/10"
                         >
@@ -485,30 +513,36 @@ const Game = () => {
                       ) : (
                         <div className="invisible">Placeholder</div>
                       )}
-                      
+
                       <Button
                         onClick={submitAnswer}
                         disabled={!selectedOption || answering}
-                        className={`py-2 px-6 transition-colors cursor-pointer ${
-                          selectedOption && !answering
+                        className={`py-2 px-6 transition-colors cursor-pointer ${selectedOption && !answering
                             ? "bg-ocean text-white hover:bg-ocean/90"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        }`}
+                          }`}
                       >
                         {answering ? "Submitting..." : "Submit Answer"}
                       </Button>
                     </div>
                   ) : (
                     <div className="flex justify-between w-full">
-                    <Button 
-                      onClick={handleNextQuestion}
-                      className="bg-ocean hover:bg-ocean/90 text-white"
-                    >
-                      Next Destination
-                    </Button>
-                     <Button className="bg-ocean hover:bg-ocean/90 text-white" onClick={()=>setIsOpen(!isOpen)}>Share to Whatsapp</Button>
-                     <ShareButton isOpen={isOpen} score={score} onClose={handleClose}/>
-                  </div>
+                      <Button
+                        onClick={handleNextQuestion}
+                        className="bg-ocean hover:bg-ocean/90 text-white"
+                      >
+                        Next Destination
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-ocean text-ocean hover:bg-ocean/5 gap-2"
+                        onClick={() => setIsOpen(!isOpen)}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Challenge a Friend
+                      </Button>
+                      <ShareButton isOpen={isOpen} score={score} onClose={handleClose} />
+                    </div>
                   )}
                 </CardFooter>
               </Card>

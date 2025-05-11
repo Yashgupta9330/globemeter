@@ -26,7 +26,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/game" element={<Game />} />
-          <Route path="/new/:token" element={<New />} />
+          <Route path="/new/:token/:score" element={<New />} />
           <Route path="/challenge" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

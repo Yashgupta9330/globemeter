@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import  { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
@@ -7,35 +7,12 @@ import GameRules from '@/components/GameRules';
 import UserRegistration from '@/components/UserRegistration';
 import UserStats from '@/components/UserStats';
 import Footer from '@/components/Footer';
-import { Button } from '@/components/ui/button';
-import { Medal } from 'lucide-react';
 import { useAuth } from '../context/auth'; 
 
 const Index = () => {
   const { user, registerUser } = useAuth(); 
-  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const challenge = searchParams.get('challenge');
-    const fromUser = searchParams.get('from');
-    const challengerScore = searchParams.get('score');
-    if (challenge && fromUser && challengerScore) {
-      sessionStorage.setItem(
-        'globetrotter_challenge',
-        JSON.stringify({
-          id: challenge,
-          from: fromUser,
-          score: parseInt(challengerScore),
-        })
-      );
-      toast({
-        title: `Challenge from ${fromUser}!`,
-        description: `${fromUser} scored ${challengerScore} points. Think you can beat it?`,
-      });
-    }
-  }, [searchParams, toast]);
 
   const handleRegister = (username: string) => {
     registerUser(username,"1dufuvjgug"); 
@@ -52,47 +29,11 @@ const Index = () => {
     navigate('/game');
   };
 
-  const handleAcceptChallenge = () => {
-    navigate('/game');
-  };
-
-  const challengeData = JSON.parse(sessionStorage.getItem('globetrotter_challenge') || 'null');
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-
       <Hero onStartGame={handleStartGame} />
       <GameRules />
-
-      {/* Challenge Banner */}
-      {challengeData && (
-        <section className="py-6 bg-ocean/10">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto p-6 rounded-lg bg-white shadow-md">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-ocean-light/20 flex items-center justify-center">
-                    <Medal className="h-6 w-6 text-ocean" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Challenge from {challengeData.from}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Score to beat:{' '}
-                      <span className="font-bold text-coral">{challengeData.score} points</span>
-                    </p>
-                  </div>
-                </div>
-                <Button className="bg-ocean hover:bg-ocean-dark" onClick={handleAcceptChallenge}>
-                  Accept Challenge
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* User section */}
       {user ? (
         <UserStats
           username={user.username}
