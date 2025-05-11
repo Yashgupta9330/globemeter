@@ -1,26 +1,21 @@
 import axios from 'axios';
 
-// Create axios instance with default configs
+
 const instance = axios.create({
-  baseURL: "http://localhost:4000/api/v1",
+  baseURL: process.env.REACT_APP_API_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 15000, // 15 seconds timeout
+  timeout: 15000, 
 });
 
-// Add request interceptor to include auth token on every request
 instance.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
     const token = localStorage.getItem('token');
-    
-    // If token exists, add to authorization header
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
     return config;
   },
   (error) => {

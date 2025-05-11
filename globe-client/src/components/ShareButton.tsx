@@ -237,7 +237,7 @@ const ShareButton: React.FC<InviteModalProps> = ({
 
     const text = `🌍 *GLOBETOTTER CHALLENGE!* 🌍
 
-👋 Hey explorer! ${invitingUser?.username} just set the bar high with ${score} points in Globetotter!
+👋 Hey explorer! ${invitingUser?.username} just set the bar high with ${invitingUser?.score} points in Globetotter!
 
 🧠 Think you've got what it takes? Dive into a world of cryptic clues and iconic destinations to test your geography smarts.
 
