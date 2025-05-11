@@ -41,8 +41,8 @@ Globetrotter is a full-stack web application where users get cryptic clues about
 ### Clone the repo
 
 ```bash
-git clone https://github.com/your-username/globetrotter.git
-cd globetrotter
+git clone https://github.com/Yashgupta9330/globemeter.git
+cd globemeter
 ```
 
 ### Frontend Setup
