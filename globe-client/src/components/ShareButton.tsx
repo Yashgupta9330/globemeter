@@ -245,7 +245,7 @@ const ShareButton: React.FC<InviteModalProps> = ({
 Username: ${formData?.username}
 Password: ${formData?.password}
 
-🎯 Take on the challenge: http://localhost:8080/new/${friendsToken}
+🎯 Take on the challenge: https://globemeter.vercel.app/new/${friendsToken}
 
 🗺️ Explore. Decode. Dominate. How far can your travel knowledge take you?
 `;
