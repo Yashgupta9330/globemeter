@@ -143,8 +143,9 @@ export default class GameService {
           code: 404
         };
       }
-      
-      await UserModel.updateUserScore(userId, answer.score);
+
+      var temp = infos.city == answer.city ? 1 : -1;
+      await UserModel.updateUserScore(userId, answer.score + temp);
       await gameMap.setPlayed(userId, answer.clueId);
       
       if (infos.city === answer.city) {

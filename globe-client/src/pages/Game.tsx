@@ -85,7 +85,7 @@ const Game = () => {
 
     try {
       const [city, country] = selectedOption.split(", ");
-
+      console.log("score ",score)
       const response = await axios.post("/game/answer", {
         clueId: clue.clueId,
         city,
@@ -153,7 +153,7 @@ const Game = () => {
   // Function to show crying emojis for incorrect answers
   const showCryingEmojis = () => {
     const emojiCount = 20;
-    const emojis = ["😢", "😭", "😿", "💧"];
+    const emojis = ["😭", "😭", "😿", "💧"];
 
     const existingEmojis = document.querySelectorAll(".crying-emoji");
     existingEmojis.forEach((emoji) => emoji.remove());
@@ -165,7 +165,7 @@ const Game = () => {
       emoji.innerText = emojis[Math.floor(Math.random() * emojis.length)];
 
       // Set random position and animation
-      const leftPos = Math.random() * 80 + 10; // 10% to 90% horizontal
+      const leftPos = Math.random() * 80 + 10; 
       emoji.style.cssText = `
         position: fixed;
         left: ${leftPos}%;
@@ -470,8 +470,7 @@ const Game = () => {
                       </div>
                     )
                   )}
-                </CardContent>
-                
+                </CardContent>   
                 <CardFooter className="flex justify-between pt-4 pb-4 bg-muted/10">
                   {!showFeedback ? (
                     <div className="flex justify-between w-full">

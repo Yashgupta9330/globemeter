@@ -38,15 +38,15 @@ export default class UserModel {
           code: 400,
         };
       }
-      
+
       const hashedPassword: string = await bcrypt.hash(user.password, 10);
       const newUser: IuserInput = {
         username: user.username,
         password: hashedPassword,
       };
-      
+
       const createdUser = await this.prisma.user.create({ data: newUser });
-      
+
       return {
         status: "success",
         message: "User created successfully",
@@ -75,7 +75,7 @@ export default class UserModel {
         id: user.id,
         username: user.username,
         password: user.password,
-        score: user.maxScore 
+        score: user.maxScore
       };
     } catch (error) {
       console.error("Error fetching user by username:", error);
@@ -88,24 +88,20 @@ export default class UserModel {
       const user = await prisma.user.findUnique({
         where: { id: userId }
       });
-      
+
       if (!user) {
         return null;
       }
 
-      if (score > user.maxScore) {
-        const updatedUser = await prisma.user.update({
-          where: { id: userId },
-          data: {
-            maxScore: score
-          }
-        });
-        
-        return updatedUser;
-      }
-      
-      return user;
-    } catch (error) {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          maxScore: score
+        }
+      });
+      return updatedUser;
+    } 
+    catch (error) {
       console.error('Error in updateUserScore:', error);
       return null;
     }

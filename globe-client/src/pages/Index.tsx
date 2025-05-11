@@ -1,13 +1,11 @@
 import React, { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import GameRules from '@/components/GameRules';
 import UserRegistration from '@/components/UserRegistration';
 import UserStats from '@/components/UserStats';
-import ShareButton from '@/components/ShareButton';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Medal } from 'lucide-react';
@@ -23,7 +21,6 @@ const Index = () => {
     const challenge = searchParams.get('challenge');
     const fromUser = searchParams.get('from');
     const challengerScore = searchParams.get('score');
-
     if (challenge && fromUser && challengerScore) {
       sessionStorage.setItem(
         'globetrotter_challenge',
@@ -33,7 +30,6 @@ const Index = () => {
           score: parseInt(challengerScore),
         })
       );
-
       toast({
         title: `Challenge from ${fromUser}!`,
         description: `${fromUser} scored ${challengerScore} points. Think you can beat it?`,
@@ -101,7 +97,7 @@ const Index = () => {
         <UserStats
           username={user.username}
           correctAnswers={user.score}
-          totalPlayed={0} // if not tracked, default to 0 or handle in context
+          totalPlayed={0} 
           onStartGame={handleStartGame}
           onShareChallenge={() => {}}
         />
