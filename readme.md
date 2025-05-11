@@ -54,6 +54,16 @@ npm run dev
 ```
 the frontend will be on http://localhost:8080
 
+
+
+### Backend ENV
+
+create a .env file
+```bash
+ DATABASE_URL=enteryoururl
+```
+
+
 ### Backend Setup
 
 ```bash

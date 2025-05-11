@@ -54,7 +54,6 @@ const Hero: React.FC<HeroProps> = ({ onStartGame }) => {
             </div>
             <p className="text-sm text-muted-foreground">Join 5,000+ travelers</p>
           </div>
-
         </div>
 
         {/* Right side with globe animation */}
