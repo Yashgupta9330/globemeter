@@ -19,7 +19,7 @@ export default class GameHashmap {
     if (data.length <= count) {
       return data.map((item) => {
         const cityName = item.city.name;
-        const countryName = item.country.name;
+        const countryName = item.city.country.name;
         return `${cityName}, ${countryName}`;
       });
     }
@@ -38,7 +38,7 @@ export default class GameHashmap {
       usedIndices.add(randomIndex);
       const randomItem = dataCopy[randomIndex];
       const cityName = randomItem.city.name;
-      const countryName = randomItem.country.name;
+      const countryName = randomItem.city.country.name;
       const cityCountryOption = `${cityName}, ${countryName}`;
       
       if (
@@ -109,7 +109,7 @@ export default class GameHashmap {
     const randomIndex = Math.floor(Math.random() * data.length);
     const randomData = data[randomIndex];
     const city = randomData.city.name;
-    const country = randomData.country.name;
+    const country = randomData.city.country.name;
     const randomClue = randomData.clues;
     const correctOption = `${city}, ${country}`;
     const options = [correctOption];
@@ -130,7 +130,7 @@ export default class GameHashmap {
     };
   }
 
-  /**
+   /**
    * Shuffle array
    */
   private shuffleArray(array: any[]): void {

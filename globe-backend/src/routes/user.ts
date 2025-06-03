@@ -1,28 +1,27 @@
-import { Router } from "express"
+import { Router, Request, Response } from "express"
+import { handleCreateUser, handleLoginUser, handleGetUserByUsername, handleCheckUsername, handleValidateUser } from "@controllers/user"
 
-const UserRoutes = Router()
-import UserController from "../controllers/user"
-import UserModel from "../models/user"
-import UserService from "../services/user"
+const userRoutes = Router()
 
-const userModel = new UserModel()
-const userService = new UserService(userModel)
-const userController = new UserController(userService)
-
-UserRoutes.post("/signup", (req, res) => {
-  userController.createUser(req, res)
+// Routes
+userRoutes.post("/signup", async (req: Request, res: Response) => {
+  await handleCreateUser(req, res)
 })
 
-UserRoutes.post("/signin", (req, res) => {
-  userController.loginUser(req, res)
+userRoutes.post("/signin", async (req: Request, res: Response) => {
+  await handleLoginUser(req, res)
 })
 
-UserRoutes.get("/username/:username",(req, res) => {
-  userController.handleCheckUsername(req, res)
-});
+userRoutes.get("/validate", async (req: Request, res: Response) => {
+  await handleValidateUser(req, res)
+})
 
-UserRoutes.get("/validate",(req, res) => {
-  userController.handleValidateUser(req, res)
-});
+userRoutes.get("/username/:username", async (req: Request, res: Response) => {
+  await handleGetUserByUsername(req, res)
+})
 
-export default UserRoutes
+userRoutes.get("/check/:username", async (req: Request, res: Response) => {
+  await handleCheckUsername(req, res)
+})
+
+export default userRoutes

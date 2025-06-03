@@ -33,7 +33,6 @@ model Country {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   cities    City[]
-  info      Info[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -55,8 +54,6 @@ model Info {
   clues     String[]
   fun_fact  String[]
   trivia    String[]
-  country   Country  @relation(fields: [countryId], references: [id])
-  countryId Int
   city      City     @relation(fields: [cityId], references: [id])
   cityId    Int      @unique
   createdAt DateTime @default(now())
