@@ -33,7 +33,6 @@ const Game = () => {
 
   useEffect(() => {
     fetchNewClue();
-
     // Show toast if there's a friend score
     if (friendScore) {
       toast({
@@ -109,7 +108,7 @@ const Game = () => {
         saveUserProgress(true);
         toast({
           title: "Correct! 🎉",
-          description: `Well done! That was indeed ${city}, ${country}!`,
+          description: `Great job! ${response.data.infos.city.name}, ${response.data.infos.city.country.name} is the correct answer.`,
         });
         
         // Show beat friend toast if score surpasses friend's score
@@ -130,7 +129,7 @@ const Game = () => {
         saveUserProgress(false);
         toast({
           title: "Not quite! 😢",
-          description: `The correct answer was ${response.data.infos.city}, ${response.data.infos.country}.`,
+          description: `The correct answer is ${response.data.infos.city.name}, ${response.data.infos.city.country.name}.`,
           variant: "destructive",
         });
       }
@@ -432,10 +431,8 @@ const Game = () => {
                   {!showFeedback ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {clue.options.map((option, index) => {
-                        const displayOption = option
-                          .split(", ")
-                          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-                          .join(", ");
+                        const cityName = option.split(", ")[0];
+                        const displayOption = cityName.charAt(0).toUpperCase() + cityName.slice(1);
 
                         return (
                           <Button
@@ -467,7 +464,7 @@ const Game = () => {
                               Correct!
                             </h3>
                             <p className="text-gray-700 text-sm text-center">
-                              {answerResult.infos.city}, {answerResult.infos.country} is the
+                              {answerResult.infos.city.name}, {answerResult.infos.city.country.name} is the
                               right answer.
                             </p>
                           </div>
@@ -480,14 +477,14 @@ const Game = () => {
                               Incorrect!
                             </h3>
                             <p className="text-gray-700 text-sm text-center">
-                              The correct answer is {answerResult.infos.city},{" "}
-                              {answerResult.infos.country}.
+                              The correct answer is {answerResult.infos.city.name},{" "}
+                              {answerResult.infos.city.country.name}.
                             </p>
                           </div>
                         )}
 
                         {/* Fun Fact */}
-                        <div className="bg-yellow-50 p-4 rounded-lg mb-4 border border-yellow-200">
+                        <div className="bg-muted/30 p-4 rounded-lg">
                           <h3 className="text-md font-bold mb-1 flex items-center justify-center">
                             <span className="text-lg mr-1.5">💡</span> Fun Fact
                           </h3>

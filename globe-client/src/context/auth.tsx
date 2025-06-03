@@ -181,6 +181,7 @@ export const AuthContextProvider = ({ children }: AuthContextProviderProps) => {
   async function validateAndLoadUser() {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
+    
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -188,18 +189,26 @@ export const AuthContextProvider = ({ children }: AuthContextProviderProps) => {
     if (!token) return;
 
     setIsLoading(true);
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     try {
       const response = await axios.get("/user/validate");
       if (response.data.success) {
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
       } else {
-        logout();
-        console.log("Token validation failed");
+        // Only clear auth data if the token is invalid
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        delete axios.defaults.headers.common["Authorization"];
+        setUser(null);
       }
     } catch (error) {
-      logout();
+      // Only clear auth data if there's a network error or server error
+      if (error instanceof AxiosError && error.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        delete axios.defaults.headers.common["Authorization"];
+        setUser(null);
+      }
       console.error("Token validation error:", error);
     } finally {
       setIsLoading(false);
