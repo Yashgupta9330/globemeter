@@ -11,6 +11,9 @@ import Footer from "@/components/Footer";
 import ShareButton from "@/components/ShareButton";
 import { useAuth } from "@/context/auth";
 import { useSearchParams } from 'react-router-dom';
+import { timeStamp } from "console";
+import { Progress } from "@/components/ui/progress";
+
 
 const Game = () => {
   const { toast } = useToast();
@@ -27,10 +30,11 @@ const Game = () => {
   const [showNextClue, setShowNextClue] = useState(false);
   const [revealedClueIndex, setRevealedClueIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-
+  const [timeLeft,setTimeLeft] = useState(30);
+  const [attempt,setAttempt] = useState(0);
   const [searchParams] = useSearchParams();
   const friendScore = parseInt(searchParams.get("friendScore") || "0", 10);
-
+  const [show50, setShow50] = useState([]);
   useEffect(() => {
     fetchNewClue();
     // Show toast if there's a friend score
@@ -45,6 +49,20 @@ const Game = () => {
   const handleClose = () => {
     setIsOpen(false);
   };
+
+
+  useEffect(() =>{
+    let timer:NodeJS.Timeout;
+    if(timeLeft>0){
+      timer = setTimeout(() =>{
+        setTimeLeft(prev => prev -1);
+      },1000);
+    }
+    else{
+      fetchNewClue();
+    }
+    return () => clearTimeout(timer);
+  },[timeLeft]);
 
   const fetchNewClue = async (forceDelete = false) => {
     setLoading(true);
@@ -64,6 +82,8 @@ const Game = () => {
           return;
         }
         setClue(response.data.data);
+        setTimeLeft(30);
+        setShow50([]);
         setTimeout(() => {
           setShowNextClue(true);
         }, 5000);
@@ -77,6 +97,39 @@ const Game = () => {
       setLoading(false);
     }
   };
+
+
+  // const removeOptions = async () =>{
+  //     while(show50.length < 2 && clue.options.length > 2){ 
+  //     let index1= Math.floor(Math.random() * clue.options.length);
+  //     let select = clue.options[index1];
+  //     const [city, country] = select.split(", ");
+  //     const response = await axios.post("/game/answer", {
+  //       clueId: clue.clueId,
+  //       city,
+  //       country,
+  //       score
+  //     });
+  //     if(!response.data.correct){
+  //       show50.push(index1);
+  //       clue.options.splice(index1,1);
+  //     }
+  //   }
+  // }
+
+
+  const fetchOptions = async () => {
+    console.log("fetching options")
+     const options =clue.options;
+     const clueId = clue.clueId;
+     const response = await axios.post("/game/options", {
+        clueId: clue.clueId,
+        options: options
+      });
+      clue.options = response.data.options;
+      console.log("respinse",response);
+  }
+
 
   const handleOptionSelect = (option) => {
     if (answerResult || answering) return; 
@@ -98,10 +151,10 @@ const Game = () => {
       });
 
       setAnswerResult(response.data);
-
+      setAttempt(prev => prev + 1);
       if (response.data.correct) {
         // Correct answer
-        setScore((prev) => prev + 1);
+        setScore((prev) => prev + timeLeft);
         launchConfetti();
 
         // Update user stats and show toast
@@ -147,7 +200,7 @@ const Game = () => {
     if (user) {
       const updatedUser = {
         ...user,
-        score: correct ? user.score + 1 : user.score - 1,
+        score: correct ? user.score + timeLeft : user.score,
       };
 
       setUser(updatedUser);
@@ -176,17 +229,9 @@ const Game = () => {
       emoji.innerText = emojis[Math.floor(Math.random() * emojis.length)];
 
       const leftPos = Math.random() * 80 + 10;
-      emoji.style.cssText = `
-        position: fixed;
-        left: ${leftPos}%;
-        top: -20px;
-        font-size: ${Math.random() * 16 + 20}px;
-        opacity: 1;
-        z-index: 50;
-        pointer-events: none;
-        animation: fall-emoji 3s ease-in forwards;
-      `;
-
+      emoji.style.left = `${leftPos}%`;
+      emoji.style.fontSize = `${Math.random() * 16 + 20}px`;
+      
       document.body.appendChild(emoji);
 
       setTimeout(() => {
@@ -194,32 +239,6 @@ const Game = () => {
       }, 3000);
     }
   };
-
-  useEffect(() => {
-    const styleElement = document.createElement("style");
-    styleElement.textContent = `
-      @keyframes fall-emoji {
-        0% {
-          transform: translateY(0) rotate(0deg);
-          opacity: 1;
-        }
-        50% {
-          opacity: 1;
-        }
-        100% {
-          transform: translateY(100vh) rotate(${Math.random() > 0.5 ? "720" : "-720"}deg);
-          opacity: 0;
-        }
-      }
-    `;
-    document.head.appendChild(styleElement);
-
-    return () => {
-      document.head.removeChild(styleElement);
-      const emojis = document.querySelectorAll(".crying-emoji");
-      emojis.forEach((emoji) => emoji.remove());
-    };
-  }, []);
 
   const handleNextQuestion = () => {
     fetchNewClue();
@@ -295,7 +314,13 @@ const Game = () => {
                 Test your geography knowledge and explore the world!
               </p>
             </div>
+           {!answerResult && ( 
+            <div className="flex flex-col items-center my-2">
+              <div>TimeLeft : {timeLeft}</div> 
+              <Progress value={(timeLeft/30)*100} max={30} className="bg-gray-200" />
+            </div>)}
 
+            <Button className="mb-4" onClick={fetchOptions}>SHOW 50 50</Button>
             {/* Friend Challenge Banner */}
             {friendScore > 0 && (
               <Card className="mb-6 border-2 border-amber-300 bg-amber-50">
@@ -343,13 +368,13 @@ const Game = () => {
               <Card className="col-span-1 bg-coral/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Attempts
+                    solved
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-coral flex items-center">
                     <MapPin className="w-5 h-5 mr-1" />
-                    {score + incorrectAnswers}
+                    {attempt}
                   </div>
                 </CardContent>
               </Card>
@@ -364,7 +389,7 @@ const Game = () => {
                   <div className="text-2xl font-bold text-accent flex items-center">
                     <Trophy className="w-5 h-5 mr-1" />
                     {score + incorrectAnswers > 0
-                      ? `${Math.round((score / (score + incorrectAnswers)) * 100)}%`
+                      ? `${Math.round((score / (attempt)) * 100)}%`
                       : "0%"}
                   </div>
                 </CardContent>

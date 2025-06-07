@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { handleGetCountries, handleGetCities, handleGetClue, handleGetAnswer } from '../controllers/game';
+import { handleGetCountries, handleGetCities, handleGetClue, handleGetAnswer, handleGetOptions } from '../controllers/game';
 import { authenticate } from '../middleware/auth';
 
 const GameRoutes = Router();
@@ -23,6 +23,11 @@ GameRoutes.post('/answer', authenticate, async (req, res) => {
 GameRoutes.get('/reset', authenticate, async (req, res) => {
     req.query.forceDelete = 'true';
     await handleGetClue(req, res);
+});
+
+
+GameRoutes.post('/options', authenticate, async (req, res) => {
+    await handleGetOptions(req, res);
 });
 
 export default GameRoutes;

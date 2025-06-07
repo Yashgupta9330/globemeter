@@ -135,3 +135,27 @@
     backdrop-filter: blur(8px);
   }
 }
+
+
+
+@keyframes fall-emoji {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.crying-emoji {
+  position: fixed;
+  top: -20px;
+  z-index: 50;
+  pointer-events: none;
+  animation: fall-emoji 3s ease-in forwards;
+}
